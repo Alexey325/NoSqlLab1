@@ -42,7 +42,7 @@ export class AuthService {
         const user = this.findByUsername(dto.username);
 
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Неверный логин или пароль');
         }
 
         const passwordValid = await bcrypt.compare(
@@ -51,7 +51,7 @@ export class AuthService {
         );
 
         if (!passwordValid) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Неверный логин или пароль');
         }
 
         return this.generateToken(user);
@@ -61,7 +61,7 @@ export class AuthService {
         const user = this.users.get(userId);
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('Пользователь не найден');
         }
 
         return {

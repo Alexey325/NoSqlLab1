@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AddCategoryDto } from './dto/add-category.dto';
 import {randomUUID} from "node:crypto";
-import {Category} from "./types/category.type";
+import {Category} from "./types/category.interface";
 
 @Injectable()
 export class CategoriesService {
