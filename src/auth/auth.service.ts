@@ -6,40 +6,45 @@ import {
 
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'node:crypto';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { User } from './types/user.interface';
+import {Repository} from "typeorm";
+import {InjectRepository} from "@nestjs/typeorm";
+import {User} from "./model/user.model";
+import {UserResponseDto} from "./dto/user-response.dto";
 
 @Injectable()
 export class AuthService {
-    private users = new Map<string, User>();
 
-    constructor(private jwtService: JwtService) {}
+    constructor(
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
+        private jwtService: JwtService) {}
 
     async register(dto: RegisterDto) {
-        const existingUser = this.findByUsername(dto.username);
+        const existingUser = await this.findByUsername(dto.username);
 
         if (existingUser) {
-            throw new ConflictException('User with this username already exists');
+            throw new ConflictException(
+                'Пользователь с таким username уже существует',
+            );
         }
 
         const passwordHash = await bcrypt.hash(dto.password, 5);
 
-        const user: User = {
-            id: randomUUID(),
+        const user = this.userRepository.create({
             username: dto.username,
-            passwordHash,
-        };
+            passwordHash: passwordHash,
+        });
 
-        this.users.set(user.id, user);
+        await this.userRepository.save(user);
 
         return this.generateToken(user);
     }
 
     async login(dto: LoginDto) {
-        const user = this.findByUsername(dto.username);
+        const user = await this.findByUsername(dto.username);
 
         if (!user) {
             throw new UnauthorizedException('Неверный логин или пароль');
@@ -57,11 +62,17 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    getCurrentUser(userId: string) {
-        const user = this.users.get(userId);
+    async getCurrentUser(userId: string) : Promise<UserResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: {
+                id: Number(userId),
+            },
+        });
 
         if (!user) {
-            throw new UnauthorizedException('Пользователь не найден');
+            throw new UnauthorizedException(
+                'Пользователь не найден',
+            );
         }
 
         return {
@@ -70,10 +81,12 @@ export class AuthService {
         };
     }
 
-    private findByUsername(username: string): User | undefined {
-        return [...this.users.values()].find(
-            (user) => user.username === username,
-        );
+    private async findByUsername(username: string) : Promise<User | null> {
+        return await this.userRepository.findOne({
+            where: {
+                username: username,
+            }
+        })
     }
 
     private generateToken(user: User) {
