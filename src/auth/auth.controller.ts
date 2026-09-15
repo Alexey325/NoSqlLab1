@@ -13,6 +13,7 @@ import {
 } from "@nestjs/swagger";
 import {JwtGuard} from "./guards/jwt.guard";
 import type {UserRequestType} from "./types/user-request.type";
+import {UserResponseDto} from "./dto/user-response.dto";
 
 @Controller('auth')
 @ApiTags("Авторизация")
@@ -68,6 +69,7 @@ export class AuthController {
     })
     @ApiOkResponse({
         description: "Текущий авторизованный пользователь",
+        type: UserResponseDto,
     })
     @ApiUnauthorizedResponse({
         description: "Токен отсутствует, недействителен или истёк",
