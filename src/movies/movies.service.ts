@@ -1,40 +1,49 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AddMovieDto } from './dto/add-movie.dto';
-import { Movie } from './types/movie.type';
-import {randomUUID} from "node:crypto";
 import {CategoriesService} from "../categories/categories.service";
 import {NotificationsService} from "../notifications/notifications.service";
 import {parseShowDate} from "./utils/show-date.parser";
+import {Repository} from "typeorm";
+import {InjectRepository} from "@nestjs/typeorm";
+import {Movie} from "./model/movie.model";
 
 @Injectable()
 export class MoviesService {
 
-    constructor(private readonly categoryService: CategoriesService,
-                private readonly notificationsService: NotificationsService) {}
+    constructor(
+        @InjectRepository(Movie)
+        private readonly movieRepository: Repository<Movie>,
 
-    private readonly movies = new Map<string, Movie>();
+        private readonly categoryService: CategoriesService,
+        private readonly notificationsService: NotificationsService,
+    ) {}
 
-    findAllMovies(): Movie[] {
-        return Array.from(this.movies.values());
+    async findAllMovies(): Promise<Movie[]> {
+        return this.movieRepository.find({
+            relations: {
+                category: true,
+            },
+        });
     }
 
-    addMovie(dto: AddMovieDto): Movie {
-        const category = this.categoryService.findByName(dto.category)
+
+    async addMovie(dto: AddMovieDto): Promise<Movie> {
+        const category = await this.categoryService.findByName(dto.category);
+
         if (!category) {
             throw new NotFoundException(`Category ${dto.category} not found`);
         }
 
         const showDate = parseShowDate(dto.showDate);
 
-        const movie: Movie = {
-            id: randomUUID(),
+        const movie = this.movieRepository.create({
             title: dto.title,
             description: dto.description,
             showDate,
-            categoryId: category.id
-        };
+            category,
+        });
 
-        this.movies.set(movie.id, movie);
+        await this.movieRepository.save(movie);
 
         this.notificationsService.scheduleNotification(
             'Премьера дня',

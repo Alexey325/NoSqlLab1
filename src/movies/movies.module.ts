@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { MoviesController } from './movies.controller';
 import { MoviesService } from './movies.service';
-import {CategoriesService} from "../categories/categories.service";
 import {CategoriesModule} from "../categories/categories.module";
 import {NotificationsModule} from "../notifications/notifications.module";
+import {TypeOrmModule} from "@nestjs/typeorm";
+import {Movie} from "./model/movie.model";
 
 @Module({
   controllers: [MoviesController],
   providers: [MoviesService],
-  imports: [CategoriesModule, NotificationsModule]
+  imports: [
+      TypeOrmModule.forFeature([Movie]),
+      CategoriesModule,
+      NotificationsModule
+  ]
 })
 
 export class MoviesModule {}

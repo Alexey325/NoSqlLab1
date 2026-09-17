@@ -6,6 +6,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import {ConfigModule} from "@nestjs/config";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {User} from "./auth/model/user.model";
+import {Category} from "./categories/model/category.model";
+import {Movie} from "./movies/model/movie.model";
 
 @Module({
   controllers: [],
@@ -22,7 +24,7 @@ import {User} from "./auth/model/user.model";
         username: process.env.POSTGRES_USER,
         password: process.env.POSTGRES_PASSWORD,
         database: process.env.POSTGRES_DB,
-        entities: [User],
+        entities: [User, Movie, Category],
         autoLoadEntities: true,
         synchronize: true,
       }),

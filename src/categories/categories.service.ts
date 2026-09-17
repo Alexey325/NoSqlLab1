@@ -1,29 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import {ConflictException, Injectable} from '@nestjs/common';
 import { AddCategoryDto } from './dto/add-category.dto';
 import {randomUUID} from "node:crypto";
-import {Category} from "./types/category.interface";
+import {Category} from "./model/category.model";
+import {InjectRepository} from "@nestjs/typeorm";
+import {Repository} from "typeorm";
 
 @Injectable()
 export class CategoriesService {
-    private readonly categories = new Map<string, Category>();
 
-    findAll(): Category[] {
-        return Array.from(this.categories.values());
+    constructor(
+        @InjectRepository(Category)
+        private readonly categoryRepository: Repository<Category>,
+    ) {}
+
+    async findAll(): Promise<Category[]> {
+        return this.categoryRepository.find();
     }
 
-    create(dto: AddCategoryDto): Category {
-        const category: Category = {
-            id: randomUUID(),
-            ...dto,
-        };
+    async create(dto: AddCategoryDto): Promise<Category> {
+        const existingCategory = await this.findByName(dto.name);
 
-        this.categories.set(category.id, category);
+        if (existingCategory) {
+            throw new ConflictException(
+                'Категория с таким названием уже существует',
+            );
+        }
 
-        return category;
+        const category = this.categoryRepository.create({
+            name: dto.name,
+        });
+
+        return this.categoryRepository.save(category);
     }
 
-    findByName(name: string): Category | undefined {
-        return [...this.categories.values()]
-            .find(category => category.name === name);
+    async findByName(name: string): Promise<Category | null> {
+        return this.categoryRepository.findOne({
+            where: {name},
+        });
     }
 }
