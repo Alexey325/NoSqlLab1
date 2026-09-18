@@ -31,7 +31,7 @@ export class MoviesService {
         const category = await this.categoryService.findByName(dto.category);
 
         if (!category) {
-            throw new NotFoundException(`Category ${dto.category} not found`);
+            throw new NotFoundException(`Категория ${dto.category} не найдена`);
         }
 
         const showDate = parseShowDate(dto.showDate);
@@ -52,5 +52,21 @@ export class MoviesService {
         );
 
         return movie;
+    }
+
+    async findById(id: number): Promise<Movie> {
+        const movie = await this.movieRepository.findOne({
+            where: {id},
+            relations: {
+                category: true,
+            },
+        })
+
+        if (!movie) {
+            throw new NotFoundException(`Фильм с id ${id} не найден`);
+        }
+
+        return movie;
+
     }
 }

@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Post} from '@nestjs/common';
+import {Body, Controller, Get, Param, ParseIntPipe, Post} from '@nestjs/common';
 import {AddCategoryDto} from "./dto/add-category.dto";
 import {CategoriesService} from "./categories.service";
 import {ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags} from "@nestjs/swagger";
@@ -18,6 +18,17 @@ export class CategoriesController {
     })
     findAllCategories() {
         return this.categoriesService.findAll();
+    }
+
+    @Get('/:id')
+    @ApiOperation({
+        summary: 'Получить категорию по Id',
+    })
+    @ApiCreatedResponse({
+        description: 'Категория успешно получена',
+    })
+    findCategory(@Param("id", ParseIntPipe) id: number) {
+        return this.categoriesService.findById(id);
     }
 
     @Post()

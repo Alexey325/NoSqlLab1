@@ -1,16 +1,21 @@
-import {ConflictException, Injectable} from '@nestjs/common';
+import {ConflictException, Injectable, NotFoundException} from '@nestjs/common';
 import { AddCategoryDto } from './dto/add-category.dto';
-import {randomUUID} from "node:crypto";
 import {Category} from "./model/category.model";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
+import {RedisService} from "../redis/redis.service";
 
 @Injectable()
 export class CategoriesService {
 
+    private readonly cachedCategoriesKey = 'category:';
+    private readonly cachedCategoriesTtl = 300;
+
     constructor(
         @InjectRepository(Category)
         private readonly categoryRepository: Repository<Category>,
+
+        private readonly redisService: RedisService,
     ) {}
 
     async findAll(): Promise<Category[]> {
@@ -35,7 +40,38 @@ export class CategoriesService {
 
     async findByName(name: string): Promise<Category | null> {
         return this.categoryRepository.findOne({
-            where: {name},
+            where: {name}
         });
+    }
+
+    async findById(id: number): Promise<Category> {
+        const cacheKey = this.cachedCategoriesKey + id
+
+        const cachedCategory = await this.redisService.get(cacheKey)
+
+        if (cachedCategory) {
+            return JSON.parse(cachedCategory);
+        }
+
+        const category =  await this.categoryRepository.findOne({
+            where: {id},
+            relations: {
+                movies: true,
+            },
+        });
+
+        if (!category) {
+            throw new NotFoundException(`Категория с id ${id} не найдена`);
+        }
+
+        const categoryToCache = {
+            id: category.id,
+            name: category.name,
+            movies: category.movies,
+        };
+
+        await this.redisService.set(cacheKey, JSON.stringify(categoryToCache), this.cachedCategoriesTtl);
+
+        return category;
     }
 }

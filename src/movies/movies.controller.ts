@@ -20,6 +20,17 @@ export class MoviesController {
         return this.movieService.findAllMovies();
     }
 
+    @Get('/:id')
+    @ApiOperation({
+        summary: 'Получить фильм по id',
+    })
+    @ApiOkResponse({
+        description: 'Фильм успешно получен',
+    })
+    findMovie(@Param('id', ParseIntPipe) id: number) {
+        return this.movieService.findById(id);
+    }
+
     @Post()
     @ApiOperation({
         summary: 'Добавить новый фильм',

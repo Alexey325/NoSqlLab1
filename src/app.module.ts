@@ -8,6 +8,7 @@ import {TypeOrmModule} from "@nestjs/typeorm";
 import {User} from "./auth/model/user.model";
 import {Category} from "./categories/model/category.model";
 import {Movie} from "./movies/model/movie.model";
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   controllers: [],
@@ -32,7 +33,8 @@ import {Movie} from "./movies/model/movie.model";
       AuthModule,
       MoviesModule,
       CategoriesModule,
-      NotificationsModule
+      NotificationsModule,
+      RedisModule
   ],
 })
 

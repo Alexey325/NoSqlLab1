@@ -10,7 +10,7 @@ import { Movie } from '../../movies/model/movie.model';
 export class Category {
 
     @PrimaryGeneratedColumn()
-    id: string;
+    id: number;
 
     @Column({ unique: true })
     name: string;
