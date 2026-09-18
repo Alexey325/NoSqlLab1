@@ -1,5 +1,5 @@
 export interface MovieNotification {
-    id: string;
+    id: number;
     title: string;
     message: string;
     createdAt: Date;

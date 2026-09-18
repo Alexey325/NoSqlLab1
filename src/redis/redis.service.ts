@@ -29,6 +29,10 @@ export class RedisService implements OnModuleDestroy{
         return this.client.del(key);
     }
 
+    async keys(pattern: string): Promise<string[]> {
+        return this.client.keys(pattern);
+    }
+
     async onModuleDestroy() {
         await this.client.quit()
     }
