@@ -22,6 +22,9 @@ export class Movie {
     @Column({ type: 'timestamp' })
     showDate: Date;
 
+    @Column({ type: 'integer' })
+    duration: number;
+
     @ManyToOne(() => Category,
         (category) => category.movies,
         {nullable: false}

@@ -24,4 +24,10 @@ export class AddMovieDto {
         description: 'Дата и время показа в формате DD.MM HH:mm',
     })
     showDate: string;
+
+    @ApiProperty({
+        example: '150',
+        description: 'Длительность фильма в минутах',
+    })
+    duration: number;
 }
