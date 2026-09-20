@@ -15,6 +15,7 @@ import { Repository, Between } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Movie } from './model/movie.model';
 import {RedisService} from "../redis/redis.service";
+import {randomUUID} from "node:crypto";
 
 @Injectable()
 export class MoviesService {
@@ -51,8 +52,9 @@ export class MoviesService {
         const { startOfDay, endOfDay } = getDayBounds(showDate);
         const dateKey = showDate.toISOString().slice(0, 10); //формат YYYY-MM-DD для ключа лока
 
-        const lockedKey = this.lockKeyPrefix + dateKey;
-        const locked = await this.redisService.setLock(lockedKey, this.lockTtl)
+        const lockKey = this.lockKeyPrefix + dateKey;
+        const token = randomUUID();
+        const locked = await this.redisService.setLock(lockKey, token, this.lockTtl)
 
         if (!locked) {
             throw new ConflictException('Расписание сейчас изменяется другим запросом');
@@ -87,7 +89,7 @@ export class MoviesService {
 
             return movie;
         } finally {
-            await this.redisService.del(lockedKey);
+            await this.redisService.delLock(lockKey, token);
         }
 
     }

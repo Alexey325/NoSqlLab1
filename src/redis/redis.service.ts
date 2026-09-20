@@ -25,19 +25,32 @@ export class RedisService implements OnModuleDestroy{
         return this.client.set(key, value);
     }
 
-    async setLock(key: string, ttl: number) : Promise<boolean> {
-        const result = await this.client.set(key, 'locked', 'EX', ttl, 'NX'); //nx - not exists
-
-        return result === 'OK';
-    }
-
-    async del(key: string): Promise<number> {
-        return this.client.del(key);
-    }
+    // async del(key: string): Promise<number> {
+    //     return this.client.del(key);
+    // }
 
     async keys(pattern: string): Promise<string[]> {
         return this.client.keys(pattern);
     }
+
+    //локи
+
+    async setLock(key: string, token: string, ttl: number) : Promise<boolean> {
+        const result = await this.client.set(key, token, 'EX', ttl, 'NX'); //nx - not exists
+
+        return result === 'OK';
+    }
+
+    async delLock(key: string, token: string): Promise<number> {
+        const tokenFromRedis = await this.get(key)
+
+        if (token === tokenFromRedis) {
+            return this.client.del(key);
+        }
+
+        return 0;
+    }
+
 
     async onModuleDestroy() {
         await this.client.quit()
