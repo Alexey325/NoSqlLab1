@@ -1,4 +1,5 @@
 import {ApiProperty} from "@nestjs/swagger";
+import {Role} from "../../roles/model/role.model";
 
 export class UserResponseDto {
 
@@ -13,4 +14,10 @@ export class UserResponseDto {
         example: "Alexey",
     })
     username: string;
+
+    @ApiProperty({
+        description: "Роли пользователя",
+        example: "ADMIN",
+    })
+    roles: Role[];
 }

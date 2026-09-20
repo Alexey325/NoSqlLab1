@@ -9,6 +9,8 @@ import {User} from "./auth/model/user.model";
 import {Category} from "./categories/model/category.model";
 import {Movie} from "./movies/model/movie.model";
 import { RedisModule } from './redis/redis.module';
+import { RolesModule } from './roles/roles.module';
+import {Role} from "./roles/model/role.model";
 
 @Module({
   controllers: [],
@@ -25,7 +27,7 @@ import { RedisModule } from './redis/redis.module';
         username: process.env.POSTGRES_USER,
         password: process.env.POSTGRES_PASSWORD,
         database: process.env.POSTGRES_DB,
-        entities: [User, Movie, Category],
+        entities: [User, Movie, Category, Role],
         autoLoadEntities: true,
         synchronize: true,
       }),
@@ -34,7 +36,8 @@ import { RedisModule } from './redis/redis.module';
       MoviesModule,
       CategoriesModule,
       NotificationsModule,
-      RedisModule
+      RedisModule,
+      RolesModule
   ],
 })
 

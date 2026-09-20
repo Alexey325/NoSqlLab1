@@ -1,6 +1,6 @@
 import {
     ConflictException,
-    Injectable,
+    Injectable, NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
 
@@ -13,6 +13,7 @@ import {Repository} from "typeorm";
 import {InjectRepository} from "@nestjs/typeorm";
 import {User} from "./model/user.model";
 import {UserResponseDto} from "./dto/user-response.dto";
+import {RolesService} from "../roles/roles.service";
 
 @Injectable()
 export class AuthService {
@@ -20,7 +21,10 @@ export class AuthService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
-        private jwtService: JwtService) {}
+
+        private readonly jwtService: JwtService,
+        private readonly rolesService: RolesService
+    ) {}
 
     async register(dto: RegisterDto) {
         const existingUser = await this.findByUsername(dto.username);
@@ -37,6 +41,14 @@ export class AuthService {
             username: dto.username,
             passwordHash: passwordHash,
         });
+
+        const role = await this.rolesService.getRoleByValue("ADMIN")
+
+        if (!role) {
+            throw new NotFoundException("Роль не найдена");
+        }
+
+        user.roles = [role]
 
         await this.userRepository.save(user);
 
@@ -67,6 +79,9 @@ export class AuthService {
             where: {
                 id: Number(userId),
             },
+            relations: {
+                roles: true,
+            }
         });
 
         if (!user) {
@@ -78,6 +93,7 @@ export class AuthService {
         return {
             id: user.id,
             username: user.username,
+            roles: user.roles,
         };
     }
 
