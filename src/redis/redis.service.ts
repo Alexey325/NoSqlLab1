@@ -25,6 +25,12 @@ export class RedisService implements OnModuleDestroy{
         return this.client.set(key, value);
     }
 
+    async setLock(key: string, ttl: number) : Promise<boolean> {
+        const result = await this.client.set(key, 'locked', 'EX', ttl, 'NX'); //nx - not exists
+
+        return result === 'OK';
+    }
+
     async del(key: string): Promise<number> {
         return this.client.del(key);
     }

@@ -14,9 +14,13 @@ import {
 import { Repository, Between } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Movie } from './model/movie.model';
+import {RedisService} from "../redis/redis.service";
 
 @Injectable()
 export class MoviesService {
+
+    private readonly lockKeyPrefix = 'lock:'
+    private readonly lockTtl : number = 300;
 
     constructor(
         @InjectRepository(Movie)
@@ -24,6 +28,7 @@ export class MoviesService {
 
         private readonly categoryService: CategoriesService,
         private readonly notificationsService: NotificationsService,
+        private readonly redisService: RedisService,
     ) {}
 
     async findAllMovies(): Promise<Movie[]> {
@@ -44,34 +49,47 @@ export class MoviesService {
         const showDate = parseShowDate(dto.showDate);
 
         const { startOfDay, endOfDay } = getDayBounds(showDate);
+        const dateKey = showDate.toISOString().slice(0, 10); //формат YYYY-MM-DD для ключа лока
 
-        const moviesOnThisDay = await this.movieRepository.find({
-            where: {
-                showDate: Between(startOfDay, endOfDay),
-            },
-        });
+        const lockedKey = this.lockKeyPrefix + dateKey;
+        const locked = await this.redisService.setLock(lockedKey, this.lockTtl)
 
-        if (hasTimeConflict(showDate, dto.duration, moviesOnThisDay)) {
-            throw new ConflictException('На указанное время уже запланирован другой фильм');
+        if (!locked) {
+            throw new ConflictException('Расписание сейчас изменяется другим запросом');
         }
 
-        const movie = this.movieRepository.create({
-            title: dto.title,
-            description: dto.description,
-            showDate,
-            category,
-            duration: dto.duration,
-        });
+        try {
+            const moviesOnThisDay = await this.movieRepository.find({
+                where: {
+                    showDate: Between(startOfDay, endOfDay),
+                },
+            });
 
-        await this.movieRepository.save(movie);
+            if (hasTimeConflict(showDate, dto.duration, moviesOnThisDay)) {
+                throw new ConflictException('На указанное время уже запланирован другой фильм');
+            }
 
-        this.notificationsService.scheduleNotification(
-            'Премьера дня',
-            `Сегодня в ${dto.showDate} показываем фильм «${movie.title}».`,
-            movie.showDate,
-        );
+            const movie = this.movieRepository.create({
+                title: dto.title,
+                description: dto.description,
+                showDate,
+                category,
+                duration: dto.duration,
+            });
 
-        return movie;
+            await this.movieRepository.save(movie);
+
+            this.notificationsService.scheduleNotification(
+                'Премьера дня',
+                `Сегодня в ${dto.showDate} показываем фильм «${movie.title}».`,
+                movie.showDate,
+            );
+
+            return movie;
+        } finally {
+            await this.redisService.del(lockedKey);
+        }
+
     }
 
     async findById(id: number): Promise<Movie> {
