@@ -14,6 +14,7 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {User} from "./model/user.model";
 import {UserResponseDto} from "./dto/user-response.dto";
 import {RolesService} from "../roles/roles.service";
+import {JwtPayload} from "./types/jwt-payload.type";
 
 @Injectable()
 export class AuthService {
@@ -74,10 +75,10 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    async getCurrentUser(userId: string) : Promise<UserResponseDto> {
+    async getCurrentUser(userId: number) : Promise<UserResponseDto> {
         const user = await this.userRepository.findOne({
             where: {
-                id: Number(userId),
+                id: userId,
             },
             relations: {
                 roles: true,
@@ -106,9 +107,10 @@ export class AuthService {
     }
 
     private generateToken(user: User) {
-        const payload = {
+        const payload : JwtPayload = {
             id: user.id,
             username: user.username,
+            roles: user.roles
         };
 
         return {

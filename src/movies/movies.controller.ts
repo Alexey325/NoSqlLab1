@@ -1,7 +1,10 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Post} from '@nestjs/common';
+import {Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards} from '@nestjs/common';
 import {AddMovieDto} from "./dto/add-movie.dto";
 import {MoviesService} from "./movies.service";
 import {ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags} from "@nestjs/swagger";
+import {Roles} from "../auth/guards/decorators/role.decorator";
+import {RolesGuard} from "../auth/guards/role.guard";
+import {JwtGuard} from "../auth/guards/jwt.guard";
 
 @Controller('movies')
 @ApiTags('Фильмы')
@@ -10,6 +13,7 @@ export class MoviesController {
     constructor(private readonly movieService: MoviesService) {}
 
     @Get()
+    @UseGuards(JwtGuard)
     @ApiOperation({
         summary: 'Получить список всех фильмов',
     })
@@ -21,6 +25,7 @@ export class MoviesController {
     }
 
     @Get('/:id')
+    @UseGuards(JwtGuard)
     @ApiOperation({
         summary: 'Получить фильм по id',
     })
@@ -32,6 +37,8 @@ export class MoviesController {
     }
 
     @Post()
+    @Roles("ADMIN")
+    @UseGuards(RolesGuard)
     @ApiOperation({
         summary: 'Добавить новый фильм',
     })

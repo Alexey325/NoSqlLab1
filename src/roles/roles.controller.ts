@@ -1,7 +1,9 @@
-import {Body, Controller, Get, Post} from '@nestjs/common';
+import {Body, Controller, Get, Post, UseGuards} from '@nestjs/common';
 import {ApiConflictResponse, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags} from "@nestjs/swagger";
 import {RolesService} from "./roles.service";
 import {CreateRoleDto} from "./dto/create-role.dto";
+import {Roles} from "../auth/guards/decorators/role.decorator";
+import {RolesGuard} from "../auth/guards/role.guard";
 
 @Controller("roles")
 @ApiTags("Роли")
@@ -12,6 +14,8 @@ export class RolesController {
     ) {}
 
     @Post()
+    @Roles("ADMIN")
+    @UseGuards(RolesGuard)
     @ApiOperation({
         summary: "Создать роль",
     })
@@ -26,6 +30,8 @@ export class RolesController {
     }
 
     @Get()
+    @Roles("ADMIN")
+    @UseGuards(RolesGuard)
     @ApiOperation({
         summary: "Получить все роли",
     })

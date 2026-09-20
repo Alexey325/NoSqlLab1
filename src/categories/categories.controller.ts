@@ -1,7 +1,10 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Post} from '@nestjs/common';
+import {Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards} from '@nestjs/common';
 import {AddCategoryDto} from "./dto/add-category.dto";
 import {CategoriesService} from "./categories.service";
 import {ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags} from "@nestjs/swagger";
+import {RolesGuard} from "../auth/guards/role.guard";
+import {Roles} from "../auth/guards/decorators/role.decorator";
+import {JwtGuard} from "../auth/guards/jwt.guard";
 
 @Controller('categories')
 @ApiTags('Категории фильмов')
@@ -10,6 +13,7 @@ export class CategoriesController {
     constructor(private readonly categoriesService: CategoriesService) {}
 
     @Get()
+    @UseGuards(JwtGuard)
     @ApiOperation({
         summary: 'Получить список всех категорий',
     })
@@ -21,6 +25,7 @@ export class CategoriesController {
     }
 
     @Get('/:id')
+    @UseGuards(JwtGuard)
     @ApiOperation({
         summary: 'Получить категорию по Id',
     })
@@ -32,6 +37,8 @@ export class CategoriesController {
     }
 
     @Post()
+    @Roles("ADMIN")
+    @UseGuards(RolesGuard)
     @ApiOperation({
         summary: 'Добавить новую категорию',
     })

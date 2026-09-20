@@ -5,6 +5,7 @@ import {CategoriesModule} from "../categories/categories.module";
 import {NotificationsModule} from "../notifications/notifications.module";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Movie} from "./model/movie.model";
+import {AuthModule} from "../auth/auth.module";
 
 @Module({
   controllers: [MoviesController],
@@ -12,7 +13,8 @@ import {Movie} from "./model/movie.model";
   imports: [
       TypeOrmModule.forFeature([Movie]),
       CategoriesModule,
-      NotificationsModule
+      NotificationsModule,
+      AuthModule
   ]
 })
 
