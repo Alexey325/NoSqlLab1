@@ -1,5 +1,6 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards} from '@nestjs/common';
+import {Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards} from '@nestjs/common';
 import {AddMovieDto} from "./dto/add-movie.dto";
+import {UpdateMovieDto} from "./dto/update-movie.dto";
 import {MoviesService} from "./movies.service";
 import {ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags} from "@nestjs/swagger";
 import {Roles} from "../auth/guards/decorators/role.decorator";
@@ -50,6 +51,22 @@ export class MoviesController {
     })
     addMovie(@Body() dto: AddMovieDto) {
         return this.movieService.addMovie(dto);
+    }
+
+    @Patch('/:id')
+    @Roles("ADMIN")
+    @UseGuards(RolesGuard)
+    @ApiOperation({
+        summary: 'Изменить время показа фильма',
+    })
+    @ApiBody({
+        type: UpdateMovieDto,
+    })
+    @ApiOkResponse({
+        description: 'Фильм успешно обновлён',
+    })
+    updateMovie(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMovieDto) {
+        return this.movieService.updateMovie(id, dto);
     }
 
 }
