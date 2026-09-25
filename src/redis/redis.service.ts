@@ -2,58 +2,53 @@ import {Injectable, OnModuleDestroy} from '@nestjs/common';
 import Redis from "ioredis";
 
 @Injectable()
-export class RedisService implements OnModuleDestroy{
+export class RedisService implements OnModuleDestroy {
 
-    private readonly client: Redis;
+    private readonly pool: Redis[];
+    private nextClientIndex = 0;
 
     constructor() {
-        this.client = new Redis({
-            host: 'localhost',
-            port: 6379,
-        });
+        const host = process.env.LOCAL_REDIS_HOST || 'localhost';
+        const port = Number(process.env.LOCAL_REDIS_PORT) || 6379;
+        const poolSize = Number(process.env.REDIS_POOL_SIZE) || 3;
+
+        this.pool = Array.from({length: poolSize}, () => new Redis({
+            host,
+            port,
+            maxRetriesPerRequest: 3,
+            connectTimeout: 5000,
+            retryStrategy: (times: number) => Math.min(times * 200, 2000),
+        }));
+    }
+
+    private nextClient(): Redis {
+        const client = this.pool[this.nextClientIndex];
+        this.nextClientIndex = (this.nextClientIndex + 1) % this.pool.length;
+
+        return client;
     }
 
     async get(key: string): Promise<string | null> {
-        return this.client.get(key);
+        return this.nextClient().get(key);
     }
 
     async set(key: string, value: string, ttl?: number): Promise<'OK' | null> {
         if (ttl) {
-            return this.client.set(key, value, 'EX', ttl);
+            return this.nextClient().set(key, value, 'EX', ttl);
         }
 
-        return this.client.set(key, value);
+        return this.nextClient().set(key, value);
     }
 
-    // async del(key: string): Promise<number> {
-    //     return this.client.del(key);
-    // }
+    async del(key: string): Promise<number> {
+        return this.nextClient().del(key);
+    }
 
     async keys(pattern: string): Promise<string[]> {
-        return this.client.keys(pattern);
-    }
-
-    //локи
-
-    async setLock(key: string, token: string, ttl: number) : Promise<boolean> {
-        const result = await this.client.set(key, token, 'EX', ttl, 'NX'); //nx - not exists
-
-        return result === 'OK';
-    }
-
-    async delLock(key: string, token: string): Promise<number> {
-        const tokenFromRedis = await this.get(key)
-
-        if (token === tokenFromRedis) {
-            return this.client.del(key);
-        }
-
-        return 0;
+        return this.nextClient().keys(pattern);
     }
 
     async onModuleDestroy() {
-        await this.client.quit()
+        await Promise.all(this.pool.map((client) => client.quit()));
     }
-
-
 }
