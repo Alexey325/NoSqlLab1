@@ -9,6 +9,7 @@ type Lock = Redlock.Lock;
 export class RedisLockService implements OnModuleDestroy {
 
     private readonly nodes: Redis[];
+    private readonly broadcastTargets: Redis[];
     private readonly redlock: Redlock;
 
     constructor() {
@@ -30,8 +31,12 @@ export class RedisLockService implements OnModuleDestroy {
         });
 
         this.redlock = new Redlock(this.nodes as unknown as RedlockClient[], {
-            retryCount: 0, //без повторных попыток, при занятом локе сразу отвечаем 409
+            retryCount: 0, //без повторных попыток, при занятом локе отвечаем 409
         });
+
+        const selfAddress = `${process.env.LOCAL_REDIS_HOST || 'localhost'}:${process.env.LOCAL_REDIS_PORT || '6379'}`;
+        //флаг "идут правки" не рассылаем на себя - свой узел сам знает что данные свежие и инвалидирует свой кэш явно
+        this.broadcastTargets = this.nodes.filter((_, index) => nodeAddresses[index] !== selfAddress);
     }
 
     async acquireScheduleLock(dateKeys: string[], ttlMs: number): Promise<Lock> {
@@ -51,7 +56,7 @@ export class RedisLockService implements OnModuleDestroy {
     async broadcastEditingFlag(dateKeys: string[], ttlMs: number): Promise<void> {
         await Promise.allSettled(
             dateKeys.flatMap((dateKey) =>
-                this.nodes.map((node) => node.set(`editing:${dateKey}`, '1', 'PX', ttlMs)),
+                this.broadcastTargets.map((node) => node.set(`editing:${dateKey}`, '1', 'PX', ttlMs)),
             ),
         );
     }

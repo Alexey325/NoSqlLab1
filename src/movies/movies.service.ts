@@ -160,6 +160,9 @@ export class MoviesService {
                 movie.showDate,
             );
 
+            //удаляем кеш текущей ноды чтобы
+            await this.redisService.del(this.moviesCacheKey);
+
             return movie;
         } finally {
             await this.redisLockService.release(lock);
